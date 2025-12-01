@@ -1,47 +1,47 @@
 import os
+import argparse
 from input_parser import parse_input_text
 from ppt_generator import generate_presentation
 from template_manager import load_template, get_layout_mapping, print_layouts
+from layout_manager import LayoutManager
+from config import Config
+from logger import LOG
 
 
-def main():
-    input_text = """
-    # ChatPPT_Demo_Homework
+def main(input_file):
+    config = Config()
 
-    ## ChatPPT Demo [Title]
+    if not os.path.exists(input_file):
+        LOG.error(f"Input file {input_file} does not exist")
+        return
 
-    ## 2024 业绩概述 [Introduction]
-    - 总收入增长15%
-    - 市场份额扩大至30%
+    with open(input_file, "r", encoding='utf-8') as file:
+        input_text = file.read()
 
-    ## 业绩图表 [Title and Picture]
-    ![业绩图表](images/performance_chart.png)
-
-    ## 新产品发布 [Summary and Picture]
-    - 产品A: 特色功能介绍
-    - 产品B: 市场定位
-    ![未来增长](images/forecast.png)
-    """
-
-    # Get the absolute path to the template file
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_dir = os.path.dirname(script_dir)
-    template_file = os.path.join(project_dir, 'templates', 'Fair frames presentation.pptx')
-    prs = load_template(template_file)
-
-    print("Available Slide Layouts:")
+    prs = load_template(config.ppt_template)
+    LOG.info("Available slide layouts:")
     print_layouts(prs)
 
-    layout_mapping = get_layout_mapping(prs)
+    layout_manager = LayoutManager(config.layout_mapping)
 
-    powerpoint_data, presentation_title = parse_input_text(input_text, layout_mapping)
+    powerpoint_data, presentation_title = parse_input_text(input_text, layout_manager)
 
-    # Create output directory and file path
-    output_dir = os.path.join(project_dir, 'output')
-    os.makedirs(output_dir, exist_ok=True)
-    output_pptx = os.path.join(output_dir, f"{presentation_title}.pptx")
-    generate_presentation(powerpoint_data, template_file, output_pptx)
+    LOG.info(f"Parsed ChatPPT PowerPoint data structure: \n{powerpoint_data}")
+
+    output_pptx = f"output/{presentation_title}.pptx"
+
+    generate_presentation(powerpoint_data, config.ppt_template, output_pptx)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='From markdown text to PowerPoint presentation.')
+    parser.add_argument(
+        'input_file',
+        nargs='?',
+        default='inputs/test_input.md',
+        help='Input markdown text file path (default: inputs/test_input.md)'
+    )
+
+    args = parser.parse_args()
+
+    main(args.input_file)
