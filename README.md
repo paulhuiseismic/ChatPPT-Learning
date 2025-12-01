@@ -49,7 +49,6 @@ python src/main.py inputs/test_input.md
 - **[Gradio 6.x Compatibility Fix](docs/GRADIO_6_COMPATIBILITY_FIX.md)** - Important compatibility information
 - **[Enhancement Summary](docs/GRADIO_ENHANCEMENT_SUMMARY.md)** - Technical details
 - **[PPT Input Format](docs/ppt_input_format.md)** - Markdown format guide
-- **[Changelog](CHANGELOG.md)** - Version history and updates
 
 ## 💡 Example
 
