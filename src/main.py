@@ -18,11 +18,11 @@ def main(input_file):
     with open(input_file, "r", encoding='utf-8') as file:
         input_text = file.read()
 
-    prs = load_template(config.ppt_template)
+    ppt_template = load_template(config.ppt_template)
     LOG.info("Available slide layouts:")
-    print_layouts(prs)
+    print_layouts(ppt_template)
 
-    layout_manager = LayoutManager(config.layout_mapping)
+    layout_manager = LayoutManager(get_layout_mapping(ppt_template))
 
     powerpoint_data, presentation_title = parse_input_text(input_text, layout_manager)
 

@@ -4,6 +4,29 @@ from utils import remove_all_slides
 from logger import LOG
 
 
+def format_text(paragraph, text):
+    while '**' in text:
+        start = text.find('**')
+        end = text.find('**', start + 2)
+
+        if start != -1 and end != -1:
+            if start > 0:
+                run = paragraph.add_run()
+                run.text = text[:start]
+
+            bold_run = paragraph.add_run()
+            bold_run.text = text[start + 2:end]
+            bold_run.font.bold = True
+
+            text = text[end + 2:]
+        else:
+            break
+
+    # Add any remaining text (or all text if no bold markers)
+    if text:
+        run = paragraph.add_run()
+        run.text = text
+
 def generate_presentation(powerpoint_data, template_path: str, output_path: str):
     if not os.path.exists(template_path):
         LOG.error(f"Template path '{template_path}' does not exist")
@@ -31,9 +54,9 @@ def generate_presentation(powerpoint_data, template_path: str, output_path: str)
                 text_frame.clear()
                 for point in slide.content.bullet_points:
                     p = text_frame.add_paragraph()
-                    p.text = point
-                    p.level = 0
-                    LOG.debug(f"New bullet point '{point}'")
+                    p.level = point['level']
+                    format_text(p, point['text'])
+                    LOG.debug(f"Add bullet point: '{p.text}' at level {p.level}")
                 break
 
         if slide.content.image_path:

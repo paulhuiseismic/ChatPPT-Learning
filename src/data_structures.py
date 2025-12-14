@@ -28,7 +28,14 @@ class PowerPoint:
             result.append(f"  Title: {slide.content.title}")
             result.append(f"  Layout: {slide.layout_name} (ID: {slide.layout_id})")
             if slide.content.bullet_points:
-                result.append(f"  Bullet Points: {', '.join(slide.content.bullet_points)}")
+                bullet_point_strs = []
+                for bullet_point in slide.content.bullet_points:
+                    text = bullet_point['text']
+                    level = bullet_point['level']
+                    indent = '  ' * level
+                    bullet_point_strs.append(f"{indent}- {text}")
+                result.append(f"  Bullet Points: {', '.join(bullet_point_strs)}")
+
             if slide.content.image_path:
                 result.append(f"  Image: {slide.content.image_path}")
         return "\n".join(result)
