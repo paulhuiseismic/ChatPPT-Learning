@@ -14,8 +14,8 @@ class SlideBuilder:
     def set_title(self, title: str):
         self.title = title
 
-    def add_bullet_point(self, bullet: str):
-        self.bullet_points.append(bullet)
+    def add_bullet_point(self, bullet: str, level: int = 0):
+        self.bullet_points.append({'text': bullet, 'level': level})
 
     def set_image(self, image_path: str):
         self.image_path = image_path

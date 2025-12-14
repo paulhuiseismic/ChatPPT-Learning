@@ -19,9 +19,17 @@ except ImportError:
     print("WARNING: langchain-core is not installed. AI transformation will not work.")
     LANGCHAIN_AVAILABLE = False
 
+try:
+    from openai_whisper import transcribe as whisper_transcribe
+    WHISPER_AVAILABLE = True
+except ImportError:
+    print("WARNING: openai_whisper is not available. Audio transcription will not work.")
+    WHISPER_AVAILABLE = False
+
 from input_parser import parse_input_text
 from ppt_generator import generate_presentation
 from layout_manager import LayoutManager
+from template_manager import load_template, get_layout_mapping
 from config import Config
 from logger import LOG
 
@@ -39,6 +47,24 @@ def load_system_prompt():
 
     with open(prompt_path, "r", encoding='utf-8') as file:
         return file.read()
+
+
+def transcribe_audio(audio_file, task="transcribe"):
+    """Transcribe audio file to text using Whisper"""
+    if not WHISPER_AVAILABLE:
+        return "❌ Whisper is not available. Please check the installation."
+
+    if not audio_file:
+        return ""
+
+    try:
+        LOG.info(f"Transcribing audio file: {audio_file}")
+        text = whisper_transcribe(audio_file, task)
+        LOG.info(f"Transcription complete: {text[:100]}...")
+        return text
+    except Exception as e:
+        LOG.error(f"Error transcribing audio: {str(e)}")
+        return f"❌ Error transcribing audio: {str(e)}"
 
 
 def transform_to_markdown(user_input, chat_history):
@@ -90,7 +116,10 @@ def generate_ppt_from_markdown(markdown_text):
 
         try:
             config = Config()
-            layout_manager = LayoutManager(config.layout_mapping)
+
+            # Load the template and get layout mapping
+            ppt_template = load_template(config.ppt_template)
+            layout_manager = LayoutManager(get_layout_mapping(ppt_template))
 
             # Parse the markdown text
             powerpoint_data, presentation_title = parse_input_text(markdown_text, layout_manager)
@@ -164,13 +193,41 @@ def create_gradio_interface():
         with gr.Row():
             with gr.Column(scale=1):
                 gr.Markdown("### 📝 Input")
+
+                # Audio upload section
+                with gr.Group():
+                    gr.Markdown("#### 🎤 Audio Input (Optional)")
+                    audio_input = gr.Audio(
+                        sources=["upload", "microphone"],
+                        type="filepath",
+                        label="Upload audio file or record",
+                        visible=WHISPER_AVAILABLE
+                    )
+                    audio_task = gr.Radio(
+                        choices=["transcribe", "translate"],
+                        value="transcribe",
+                        label="Task",
+                        visible=WHISPER_AVAILABLE
+                    )
+                    transcribe_btn = gr.Button(
+                        "🎵 Transcribe Audio",
+                        variant="secondary",
+                        visible=WHISPER_AVAILABLE
+                    )
+                    if not WHISPER_AVAILABLE:
+                        gr.Markdown("⚠️ *Audio transcription not available. Install required dependencies.*")
+
+                # Text input section
+                gr.Markdown("#### ✍️ Text Input")
                 user_input = gr.Textbox(
                     label="Enter your content",
                     placeholder="Describe your presentation content here...\n\nExample:\n我想做一个关于人工智能的演讲\n包括AI的定义\nAI的应用领域\nAI的未来发展",
                     lines=10
                 )
-                submit_btn = gr.Button("🚀 Generate PowerPoint", variant="primary", size="lg")
-                clear_btn = gr.Button("🗑️ Clear", variant="secondary")
+
+                with gr.Row():
+                    submit_btn = gr.Button("🚀 Generate PowerPoint", variant="primary", size="lg")
+                    clear_btn = gr.Button("🗑️ Clear", variant="secondary")
 
             with gr.Column(scale=1):
                 gr.Markdown("### 💬 Chat History")
@@ -202,27 +259,51 @@ def create_gradio_interface():
 
         # Event handlers
         def clear_all():
-            return [], "", "", None, ""
+            return [], "", "", None, "", None
 
+        def handle_audio_transcription(audio_file, task, current_text):
+            """Transcribe audio and append to current text"""
+            if not audio_file:
+                return current_text
+
+            transcribed_text = transcribe_audio(audio_file, task)
+
+            # Append to existing text if there is any
+            if current_text and current_text.strip():
+                return current_text + "\n\n" + transcribed_text
+            else:
+                return transcribed_text
+
+        # Audio transcription handler
+        if WHISPER_AVAILABLE:
+            transcribe_btn.click(
+                fn=handle_audio_transcription,
+                inputs=[audio_input, audio_task, user_input],
+                outputs=[user_input]
+            )
+
+        # PowerPoint generation handler
         submit_btn.click(
             fn=process_user_input,
             inputs=[user_input, chatbot],
             outputs=[chatbot, markdown_output, ppt_output, status_output]
         )
 
+        # Clear all handler
         clear_btn.click(
             fn=clear_all,
-            outputs=[chatbot, user_input, markdown_output, ppt_output, status_output]
+            outputs=[chatbot, user_input, markdown_output, ppt_output, status_output, audio_input]
         )
 
         gr.Markdown(
             """
             ---
             ### 📌 Tips:
-            - You can write in natural language (Chinese or English)
-            - The AI will structure your content into slides
-            - Each generated PowerPoint will have a unique timestamp
-            - Check the `output/` folder for all generated presentations
+            - 🎤 **Audio Input**: Upload an audio file or record using your microphone, then click "Transcribe Audio" to convert it to text
+            - ✍️ **Text Input**: You can write in natural language (Chinese or English)
+            - 🤖 **AI Processing**: The AI will structure your content into slides
+            - 📁 **Output**: Each generated PowerPoint will have a unique timestamp
+            - 💾 **Storage**: Check the `output/` folder for all generated presentations
             """
         )
 
@@ -237,5 +318,7 @@ if __name__ == "__main__":
     demo.queue().launch(
         share=False,
         server_name="0.0.0.0",
+        server_port=7860,
+        root_path="/gradio"
     )
 

@@ -7,6 +7,18 @@ from layout_manager import LayoutManager
 from logger import LOG
 
 
+def parse_bullet_point_level(line: str) -> Tuple[int, str]:
+    indent_length = len(line) - len(line.lstrip())
+
+    indent_level = indent_length // 2
+
+    LOG.debug(f"Indent level: {indent_level}")
+    LOG.debug(f"Line: {line}")
+
+    bullet_text = line.strip().lstrip('- ').strip()
+    return indent_level, bullet_text
+
+
 def parse_input_text(input_text: str, layout_manager: LayoutManager) -> Tuple[PowerPoint, str]:
     lines = input_text.split("\n")
     presentation_title = ""
@@ -14,11 +26,12 @@ def parse_input_text(input_text: str, layout_manager: LayoutManager) -> Tuple[Po
     slide_builder: Optional[SlideBuilder] = None
 
     slide_title_pattern = re.compile(r'^##\s+(.*)')
-    bullet_pattern = re.compile(r'^-\s+(.*)')
+    bullet_pattern = re.compile(r'^(\s*)-\s+(.*)')
     image_pattern = re.compile(r'!\[.*?\]\((.*?)\)')
 
     for line in lines:
-        line = line.strip()
+        if line.strip() == '':
+            continue
 
         if line.startswith('# ') and not line.startswith('##'):
             presentation_title = line[2:].strip()
@@ -38,11 +51,13 @@ def parse_input_text(input_text: str, layout_manager: LayoutManager) -> Tuple[Po
                 slide_builder = SlideBuilder(layout_manager)
                 slide_builder.set_title(title)
 
-        elif line.startswith('- ') and slide_builder:
+        elif bullet_pattern.match(line) and slide_builder:
             match = bullet_pattern.match(line)
             if match:
-                bullet = match.group(1).strip()
-                slide_builder.add_bullet_point(bullet)
+                indent_spaces, bullet = match.groups()
+                indent_level = len(indent_spaces) // 2
+                bullet_text = bullet.strip()
+                slide_builder.add_bullet_point(bullet_text, level=indent_level)
 
         elif line.startswith('![') and slide_builder:
             match = image_pattern.match(line)
