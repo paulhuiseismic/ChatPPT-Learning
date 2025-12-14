@@ -232,15 +232,10 @@ def create_gradio_interface():
 if __name__ == "__main__":
     LOG.info("Starting ChatPPT Gradio application...")
 
-    # Ensure output directory exists
-    os.makedirs("output", exist_ok=True)
-
     # Create and launch the interface
     demo = create_gradio_interface()
-    demo.launch(
-        server_name="127.0.0.1",
-        server_port=7861,
+    demo.queue().launch(
         share=False,
-        show_error=True
+        server_name="0.0.0.0",
     )
 
