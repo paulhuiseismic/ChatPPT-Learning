@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument(
         'input_file',
         nargs='?',
-        default='inputs/test_input.md',
+        default='inputs/markdown/test_input.md',
         help='Input markdown text file path (default: inputs/test_input.md)'
     )
 
