@@ -40,14 +40,21 @@ python src/main.py inputs/test_input.md
 
 ## 📖 Documentation
 
-**📚 [Complete Documentation Index](DOCUMENTATION_INDEX.md)** - Find all documentation in one place
+**📚 [Complete Documentation Hub](docs/README.md)** - All documentation organized in one place
 
 ### Quick Links
-- **[Quick Start Guide](QUICKSTART.md)** ⭐ Start here - Get up and running in 2 minutes
+- **[Quick Status](docs/QUICK_STATUS.md)** ⭐ Current working setup and usage
+- **[Quick Start Guide](QUICKSTART.md)** - Get up and running in 2 minutes
 - **[Project Status](PROJECT_STATUS.md)** - Current version and verified features
-- **[Gradio Setup Guide](docs/GRADIO_SETUP_GUIDE.md)** - Complete web interface guide
-- **[Gradio 6.x Compatibility Fix](docs/GRADIO_6_COMPATIBILITY_FIX.md)** - Important compatibility information
-- **[Enhancement Summary](docs/GRADIO_ENHANCEMENT_SUMMARY.md)** - Technical details
+
+### Setup & Troubleshooting
+- **[PyTorch Installation](docs/PYTORCH_INSTALLATION_TROUBLESHOOTING.md)** - Fix installation issues
+- **[GPU Setup (Blackwell)](docs/BLACKWELL_GPU_SETUP.md)** - GPU compatibility guide
+- **[Complete Fix Summary](docs/FINAL_FIX_STATUS.md)** - All issues resolved (Dec 19, 2025)
+
+### Feature Guides
+- **[Gradio Web Interface](docs/GRADIO_SETUP_GUIDE.md)** - Complete web interface guide
+- **[MiniCPM-V Vision Model](docs/QUICK_STATUS.md)** - Image analysis with CPU fallback
 - **[PPT Input Format](docs/ppt_input_format.md)** - Markdown format guide
 
 ## 💡 Example
