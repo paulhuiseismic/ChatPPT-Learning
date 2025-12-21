@@ -102,7 +102,7 @@ Open your browser to: **http://127.0.0.1:7861**
 |-------------|--------|---------|
 | Use Gradio to build chatbot GUI | ✅ DONE | Full web interface with chat history |
 | Transform user input to markdown | ✅ DONE | Using Azure OpenAI + system prompt |
-| Use system prompt from formatter.txt | ✅ DONE | Loaded and applied successfully |
+| Use system prompt from content_formatter.txt | ✅ DONE | Loaded and applied successfully |
 | Generate PowerPoint from markdown | ✅ DONE | Using existing main.py functionality |
 | Ensure functionality works well | ✅ DONE | Tested and verified working |
 
@@ -120,7 +120,7 @@ Open your browser to: **http://127.0.0.1:7861**
 
 ### Backend Integration
 - 🔗 Azure OpenAI via LangChain
-- 📋 System prompt from `prompts/formatter.txt`
+- 📋 System prompt from `prompts/content_formatter.txt`
 - 🔄 Existing ChatPPT parser and generator
 - 📝 Comprehensive logging
 - ⚠️ Error handling and recovery
@@ -165,7 +165,7 @@ Real-world applications
 ### Required Files (All Present)
 - ✅ `.env` - Azure OpenAI credentials
 - ✅ `config.json` - App configuration  
-- ✅ `prompts/formatter.txt` - AI system prompt
+- ✅ `prompts/content_formatter.txt` - AI system prompt
 - ✅ `templates/MasterTemplate.pptx` - PowerPoint template
 
 ### Environment Variables
@@ -225,7 +225,7 @@ AZURE_API_VERSION=2024-12-01-preview
 5. ✅ Start creating presentations!
 
 ### For Advanced Users
-- Customize `prompts/formatter.txt` for specific formatting
+- Customize `prompts/content_formatter.txt` for specific formatting
 - Modify `templates/MasterTemplate.pptx` for branding
 - Adjust `config.json` for different layouts
 - Add more templates to `templates/` folder

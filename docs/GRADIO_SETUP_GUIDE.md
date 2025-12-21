@@ -183,7 +183,7 @@ ChatPPT-Learning/
 │   ├── layout_manager.py       # Slide layout manager
 │   └── logger.py               # Logging configuration
 ├── prompts/
-│   └── formatter.txt           # System prompt for AI
+│   └── content_formatter.txt   # System prompt for AI
 ├── templates/
 │   └── MasterTemplate.pptx     # PowerPoint template
 ├── output/                     # Generated presentations

@@ -44,8 +44,8 @@ python src/main.py inputs/test_input.md
 
 ### Quick Links
 - **[Quick Status](docs/QUICK_STATUS.md)** ⭐ Current working setup and usage
-- **[Quick Start Guide](QUICKSTART.md)** - Get up and running in 2 minutes
-- **[Project Status](PROJECT_STATUS.md)** - Current version and verified features
+- **[Quick Start Guide](docs/QUICKSTART.md)** - Get up and running in 2 minutes
+- **[Project Status](docs/PROJECT_STATUS.md)** - Current version and verified features
 
 ### Setup & Troubleshooting
 - **[PyTorch Installation](docs/PYTORCH_INSTALLATION_TROUBLESHOOTING.md)** - Fix installation issues

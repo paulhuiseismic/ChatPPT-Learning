@@ -6,7 +6,7 @@
 A complete web-based GUI application with the following features:
 
 - **Natural Language Input**: Users can enter presentation content in plain text (Chinese or English)
-- **AI Transformation**: Azure OpenAI transforms user input into structured markdown format using the system prompt from `prompts/formatter.txt`
+- **AI Transformation**: Azure OpenAI transforms user input into structured markdown format using the system prompt from `prompts/content_formatter.txt`
 - **Automatic PPT Generation**: Converts markdown to PowerPoint using the existing ChatPPT engine
 - **Chat History**: Displays conversation with the AI
 - **Markdown Preview**: Shows the generated markdown before PPT creation
@@ -14,7 +14,7 @@ A complete web-based GUI application with the following features:
 - **Error Handling**: Graceful error handling with informative messages
 
 ### 2. System Prompt Integration
-- Reads system prompt from `prompts/formatter.txt`
+- Reads system prompt from `prompts/content_formatter.txt`
 - Uses Azure OpenAI (via LangChain) to transform natural language to markdown
 - Maintains conversation context through chat history
 
