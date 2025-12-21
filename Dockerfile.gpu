@@ -1,0 +1,57 @@
+# ChatPPT Docker Image - GPU/CUDA Support
+# For deployment with NVIDIA GPU support
+
+FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    CUDA_HOME=/usr/local/cuda
+
+# Install Python and system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3-pip \
+    python3.11-dev \
+    build-essential \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create symbolic links for Python
+RUN ln -s /usr/bin/python3.11 /usr/bin/python
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install PyTorch with CUDA support
+RUN pip install --upgrade pip && \
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 && \
+    pip install -r requirements.txt
+
+# Copy application code
+COPY src/ ./src/
+COPY templates/ ./templates/
+COPY prompts/ ./prompts/
+COPY config.json .
+COPY .env.example .env
+
+# Create necessary directories
+RUN mkdir -p output images logs inputs/markdown inputs/docx models
+
+# Expose Gradio port
+EXPOSE 7860
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:7860/ || exit 1
+
+# Run Gradio app
+CMD ["python", "src/gradio_app.py"]
+

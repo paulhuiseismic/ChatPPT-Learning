@@ -1,0 +1,125 @@
+---
+# GPU-enabled Deployment for ChatPPT
+# Requires Kubernetes cluster with GPU nodes and NVIDIA GPU Operator
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatppt-gpu-deployment
+  namespace: chatppt
+  labels:
+    app: chatppt-gpu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatppt-gpu
+  template:
+    metadata:
+      labels:
+        app: chatppt-gpu
+    spec:
+      # Node selector for GPU nodes
+      nodeSelector:
+        accelerator: nvidia-gpu
+
+      containers:
+      - name: chatppt-gpu
+        image: ghcr.io/yourusername/chatppt:latest-gpu
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 7860
+          name: http
+
+        env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: "compute,utility"
+        - name: GRADIO_SERVER_NAME
+          value: "0.0.0.0"
+        - name: GRADIO_SERVER_PORT
+          value: "7860"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: chatppt-secrets
+              key: OPENAI_API_KEY
+        - name: AZURE_OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: chatppt-secrets
+              key: AZURE_OPENAI_API_KEY
+        - name: AZURE_OPENAI_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: chatppt-secrets
+              key: AZURE_OPENAI_ENDPOINT
+
+        volumeMounts:
+        - name: output
+          mountPath: /app/output
+        - name: models
+          mountPath: /app/models
+        - name: config
+          mountPath: /app/config.json
+          subPath: config.json
+
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "2000m"
+            nvidia.com/gpu: 1
+          limits:
+            memory: "16Gi"
+            cpu: "4000m"
+            nvidia.com/gpu: 1
+
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 7860
+          initialDelaySeconds: 120
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 7860
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+      volumes:
+      - name: output
+        persistentVolumeClaim:
+          claimName: chatppt-output-pvc
+      - name: models
+        persistentVolumeClaim:
+          claimName: chatppt-models-pvc
+      - name: config
+        configMap:
+          name: chatppt-config
+
+---
+# Service for GPU deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: chatppt-gpu-service
+  namespace: chatppt
+  labels:
+    app: chatppt-gpu
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 7860
+    protocol: TCP
+    name: http
+  selector:
+    app: chatppt-gpu
+
