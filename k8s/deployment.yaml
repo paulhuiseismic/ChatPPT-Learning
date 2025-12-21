@@ -1,0 +1,221 @@
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chatppt
+  labels:
+    name: chatppt
+
+---
+# ConfigMap for application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chatppt-config
+  namespace: chatppt
+data:
+  config.json: |
+    {
+      "input_mode": "text",
+      "chatbot_prompt": "prompts/chatbot.txt",
+      "content_formatter_prompt": "prompts/content_formatter.txt",
+      "content_assistant_prompt": "prompts/content_assistant.txt",
+      "image_advisor_prompt": "prompts/image_advisor.txt",
+      "ppt_template": "templates/SimpleTemplate.pptx"
+    }
+
+  GRADIO_SERVER_NAME: "0.0.0.0"
+  GRADIO_SERVER_PORT: "7860"
+  LOG_LEVEL: "INFO"
+
+---
+# Secret for API keys (create this separately with actual values)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: chatppt-secrets
+  namespace: chatppt
+type: Opaque
+stringData:
+  OPENAI_API_KEY: "your_openai_api_key_here"
+  AZURE_OPENAI_API_KEY: "your_azure_openai_api_key_here"
+  AZURE_OPENAI_ENDPOINT: "https://your-resource.openai.azure.com/"
+  AZURE_OPENAI_API_VERSION: "2024-02-15-preview"
+
+---
+# PersistentVolumeClaim for outputs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chatppt-output-pvc
+  namespace: chatppt
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+
+---
+# PersistentVolumeClaim for models
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chatppt-models-pvc
+  namespace: chatppt
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard
+
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatppt-deployment
+  namespace: chatppt
+  labels:
+    app: chatppt
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chatppt
+  template:
+    metadata:
+      labels:
+        app: chatppt
+    spec:
+      containers:
+      - name: chatppt
+        image: ghcr.io/yourusername/chatppt:latest-cpu
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 7860
+          name: http
+        env:
+        - name: GRADIO_SERVER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: chatppt-config
+              key: GRADIO_SERVER_NAME
+        - name: GRADIO_SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: chatppt-config
+              key: GRADIO_SERVER_PORT
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: chatppt-secrets
+              key: OPENAI_API_KEY
+        - name: AZURE_OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: chatppt-secrets
+              key: AZURE_OPENAI_API_KEY
+        - name: AZURE_OPENAI_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: chatppt-secrets
+              key: AZURE_OPENAI_ENDPOINT
+        - name: AZURE_OPENAI_API_VERSION
+          valueFrom:
+            secretKeyRef:
+              name: chatppt-secrets
+              key: AZURE_OPENAI_API_VERSION
+        volumeMounts:
+        - name: output
+          mountPath: /app/output
+        - name: models
+          mountPath: /app/models
+        - name: config
+          mountPath: /app/config.json
+          subPath: config.json
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 7860
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 7860
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: output
+        persistentVolumeClaim:
+          claimName: chatppt-output-pvc
+      - name: models
+        persistentVolumeClaim:
+          claimName: chatppt-models-pvc
+      - name: config
+        configMap:
+          name: chatppt-config
+
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: chatppt-service
+  namespace: chatppt
+  labels:
+    app: chatppt
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 7860
+    protocol: TCP
+    name: http
+  selector:
+    app: chatppt
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: chatppt-hpa
+  namespace: chatppt
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: chatppt-deployment
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

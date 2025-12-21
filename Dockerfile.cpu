@@ -1,0 +1,49 @@
+# ChatPPT Docker Image - CPU Optimized Version
+# Lightweight version without CUDA support for faster builds and smaller images
+
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install CPU-only PyTorch
+COPY requirements.txt .
+
+# Install dependencies with CPU-only PyTorch
+RUN pip install --upgrade pip && \
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu && \
+    pip install -r requirements.txt
+
+# Copy application code
+COPY src/ ./src/
+COPY templates/ ./templates/
+COPY prompts/ ./prompts/
+COPY config.json .
+COPY .env.example .env
+
+# Create necessary directories
+RUN mkdir -p output images logs inputs/markdown inputs/docx
+
+# Expose Gradio port
+EXPOSE 7860
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:7860/ || exit 1
+
+# Run Gradio app
+CMD ["python", "src/gradio_app.py"]
+

@@ -47,6 +47,16 @@ python src/main.py inputs/test_input.md
 - **[Quick Start Guide](docs/QUICKSTART.md)** - Get up and running in 2 minutes
 - **[Project Status](docs/PROJECT_STATUS.md)** - Current version and verified features
 
+### 🐳 Docker & CI/CD Deployment (NEW)
+- **[Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md)** 🚀 Complete containerization guide
+- **[Docker Quick Reference](DOCKER_QUICK_REFERENCE.md)** ⚡ Quick commands cheat sheet
+- **[CI/CD Summary](DOCKER_CICD_SUMMARY.md)** 📦 Full implementation overview
+
+### 🧪 Testing
+- **[Unit Tests](src/tests/README.md)** - Comprehensive test suite (60+ tests)
+- **[Test Quick Start](src/tests/QUICKSTART.md)** - Run tests in seconds
+- **[Unit Test Summary](UNIT_TEST_SUMMARY.md)** - Implementation details
+
 ### Setup & Troubleshooting
 - **[PyTorch Installation](docs/PYTORCH_INSTALLATION_TROUBLESHOOTING.md)** - Fix installation issues
 - **[GPU Setup (Blackwell)](docs/BLACKWELL_GPU_SETUP.md)** - GPU compatibility guide
