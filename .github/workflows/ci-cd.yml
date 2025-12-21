@@ -1,11 +1,12 @@
 name: ChatPPT CI/CD Pipeline
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-  workflow_dispatch:
+# DISABLED: Uncomment the 'on' section below to enable this workflow
+# on:
+#   push:
+#     branches: [ main, develop ]
+#   pull_request:
+#     branches: [ main, develop ]
+#   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
