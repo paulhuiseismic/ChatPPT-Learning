@@ -16,7 +16,7 @@
    - Basic usage examples
    - Common troubleshooting
 
-2. **[README.md](README.md)** 
+2. **[README.md](../README.md)** 
    - Project overview
    - Feature list
    - Quick start commands
@@ -24,13 +24,13 @@
 
 ### For Web Interface Users
 
-3. **[docs/GRADIO_SETUP_GUIDE.md](docs/GRADIO_SETUP_GUIDE.md)**
+3. **[docs/GRADIO_SETUP_GUIDE.md](GRADIO_SETUP_GUIDE.md)**
    - Complete web interface setup
    - Step-by-step usage guide
    - Detailed troubleshooting
    - Configuration examples
 
-4. **[docs/gradio_app_guide.md](docs/gradio_app_guide.md)**
+4. **[docs/gradio_app_guide.md](gradio_app_guide.md)**
    - Quick reference guide
    - UI component overview
    - Tips and tricks
@@ -47,7 +47,7 @@
    - Test results
    - System health status
 
-6. **[SUCCESS_SUMMARY.md](SUCCESS_SUMMARY.md)**
+6. **[SUCCESS_SUMMARY.md](../SUCCESS_SUMMARY.md)**
    - Implementation success verification
    - Performance metrics
    - Test case results
@@ -72,7 +72,7 @@
    - Testing status
    - Compatibility information
 
-9. **[docs/GRADIO_ENHANCEMENT_SUMMARY.md](docs/GRADIO_ENHANCEMENT_SUMMARY.md)**
+9. **[docs/GRADIO_ENHANCEMENT_SUMMARY.md](GRADIO_ENHANCEMENT_SUMMARY.md)**
    - Technical implementation summary
    - Architecture overview
    - Code organization
@@ -80,13 +80,13 @@
 
 ### Bug Fixes & Compatibility
 
-10. **[docs/GRADIO_6_COMPATIBILITY_FIX.md](docs/GRADIO_6_COMPATIBILITY_FIX.md)** ⭐ **IMPORTANT**
+10. **[docs/GRADIO_6_COMPATIBILITY_FIX.md](GRADIO_6_COMPATIBILITY_FIX.md)** ⭐ **IMPORTANT**
     - Gradio 6.x compatibility fix details
     - Root cause analysis
     - Solution explanation
     - Prevention guidelines
 
-11. **[docs/bug_fix_summary.md](docs/bug_fix_summary.md)**
+11. **[docs/bug_fix_summary.md](bug_fix_summary.md)**
     - Historical bug fixes
     - Solutions applied
     - Lessons learned
@@ -97,7 +97,7 @@
 
 ### Input Format
 
-12. **[docs/ppt_input_format.md](docs/ppt_input_format.md)**
+12. **[docs/ppt_input_format.md](ppt_input_format.md)**
     - Markdown syntax guide
     - Slide structure examples
     - Image insertion format
@@ -118,22 +118,22 @@
 
 | User Type | Start Here | Then Read |
 |-----------|------------|-----------|
-| **New User** | [QUICKSTART.md](QUICKSTART.md) | [README.md](README.md) |
-| **Web Interface User** | [GRADIO_SETUP_GUIDE.md](docs/GRADIO_SETUP_GUIDE.md) | [gradio_app_guide.md](docs/gradio_app_guide.md) |
-| **Developer** | [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) | [GRADIO_ENHANCEMENT_SUMMARY.md](docs/GRADIO_ENHANCEMENT_SUMMARY.md) |
-| **Troubleshooting** | [GRADIO_6_COMPATIBILITY_FIX.md](docs/GRADIO_6_COMPATIBILITY_FIX.md) | [GRADIO_SETUP_GUIDE.md](docs/GRADIO_SETUP_GUIDE.md) |
+| **New User** | [QUICKSTART.md](QUICKSTART.md) | [README.md](../README.md) |
+| **Web Interface User** | [GRADIO_SETUP_GUIDE.md](GRADIO_SETUP_GUIDE.md) | [gradio_app_guide.md](gradio_app_guide.md) |
+| **Developer** | [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) | [GRADIO_ENHANCEMENT_SUMMARY.md](GRADIO_ENHANCEMENT_SUMMARY.md) |
+| **Troubleshooting** | [GRADIO_6_COMPATIBILITY_FIX.md](GRADIO_6_COMPATIBILITY_FIX.md) | [GRADIO_SETUP_GUIDE.md](GRADIO_SETUP_GUIDE.md) |
 
 ### By Task
 
 | Task | Documentation |
 |------|---------------|
 | Install & Run | [QUICKSTART.md](QUICKSTART.md) |
-| Use Web Interface | [GRADIO_SETUP_GUIDE.md](docs/GRADIO_SETUP_GUIDE.md) |
-| Write Markdown Input | [ppt_input_format.md](docs/ppt_input_format.md) |
-| Fix Errors | [GRADIO_6_COMPATIBILITY_FIX.md](docs/GRADIO_6_COMPATIBILITY_FIX.md) |
+| Use Web Interface | [GRADIO_SETUP_GUIDE.md](GRADIO_SETUP_GUIDE.md) |
+| Write Markdown Input | [ppt_input_format.md](ppt_input_format.md) |
+| Fix Errors | [GRADIO_6_COMPATIBILITY_FIX.md](GRADIO_6_COMPATIBILITY_FIX.md) |
 | Check Version | [CHANGELOG.md](CHANGELOG.md) |
 | Verify Status | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
-| Understand Architecture | [GRADIO_ENHANCEMENT_SUMMARY.md](docs/GRADIO_ENHANCEMENT_SUMMARY.md) |
+| Understand Architecture | [GRADIO_ENHANCEMENT_SUMMARY.md](GRADIO_ENHANCEMENT_SUMMARY.md) |
 
 ---
 
@@ -143,17 +143,17 @@
 
 1. **Application won't start?**
    - See [QUICKSTART.md - Troubleshooting](QUICKSTART.md#troubleshooting)
-   - Check [GRADIO_6_COMPATIBILITY_FIX.md](docs/GRADIO_6_COMPATIBILITY_FIX.md)
+   - Check [GRADIO_6_COMPATIBILITY_FIX.md](GRADIO_6_COMPATIBILITY_FIX.md)
 
 2. **TypeError with Gradio?**
-   - Read [GRADIO_6_COMPATIBILITY_FIX.md](docs/GRADIO_6_COMPATIBILITY_FIX.md) ⭐
+   - Read [GRADIO_6_COMPATIBILITY_FIX.md](GRADIO_6_COMPATIBILITY_FIX.md) ⭐
 
 3. **Azure OpenAI errors?**
-   - See [GRADIO_SETUP_GUIDE.md - Troubleshooting](docs/GRADIO_SETUP_GUIDE.md#troubleshooting)
+   - See [GRADIO_SETUP_GUIDE.md - Troubleshooting](GRADIO_SETUP_GUIDE.md#troubleshooting)
 
 4. **PowerPoint not generating?**
-   - Check [ppt_input_format.md](docs/ppt_input_format.md) for correct format
-   - Review [GRADIO_SETUP_GUIDE.md](docs/GRADIO_SETUP_GUIDE.md)
+   - Check [ppt_input_format.md](ppt_input_format.md) for correct format
+   - Review [GRADIO_SETUP_GUIDE.md](GRADIO_SETUP_GUIDE.md)
 
 ---
 
@@ -202,8 +202,8 @@ Documentation Structure:
 
 1. **Check [PROJECT_STATUS.md](PROJECT_STATUS.md)** for current system status
 2. **Read [QUICKSTART.md](QUICKSTART.md)** for basic issues
-3. **Review [GRADIO_6_COMPATIBILITY_FIX.md](docs/GRADIO_6_COMPATIBILITY_FIX.md)** for compatibility issues
-4. **Consult [GRADIO_SETUP_GUIDE.md](docs/GRADIO_SETUP_GUIDE.md)** for detailed troubleshooting
+3. **Review [GRADIO_6_COMPATIBILITY_FIX.md](GRADIO_6_COMPATIBILITY_FIX.md)** for compatibility issues
+4. **Consult [GRADIO_SETUP_GUIDE.md](GRADIO_SETUP_GUIDE.md)** for detailed troubleshooting
 
 ---
 

@@ -16,7 +16,7 @@
   - ✅ Updated to use Gradio 6.0.1 API correctly
 
 ### 2. System Prompt Integration
-- ✅ Reads system prompt from `prompts/formatter.txt`
+- ✅ Reads system prompt from `prompts/content_formatter.txt`
 - ✅ Uses Azure OpenAI via LangChain to transform user input
 - ✅ Maintains conversation context
 - ✅ Handles Chinese and English input
@@ -65,7 +65,7 @@
 
 ### Core Workflow
 1. ✅ User enters content in natural language
-2. ✅ System loads prompt from `prompts/formatter.txt`
+2. ✅ System loads prompt from `prompts/content_formatter.txt`
 3. ✅ Azure OpenAI transforms input to markdown
 4. ✅ Markdown displayed in preview pane
 5. ✅ Parser converts markdown to PowerPoint data structure
@@ -141,7 +141,7 @@ Open browser to: `http://127.0.0.1:7861`
 ### Required Files
 - ✅ `.env` - Azure OpenAI credentials
 - ✅ `config.json` - Application configuration
-- ✅ `prompts/formatter.txt` - AI system prompt
+- ✅ `prompts/content_formatter.txt` - AI system prompt
 - ✅ `templates/MasterTemplate.pptx` - PowerPoint template
 
 ### Environment Variables (.env)
@@ -212,7 +212,7 @@ AZURE_API_VERSION=2024-12-01-preview
 | Criteria | Status | Notes |
 |----------|--------|-------|
 | Gradio GUI implemented | ✅ Done | Fully functional web interface |
-| Uses system prompt from formatter.txt | ✅ Done | Loaded and used for AI |
+| Uses system prompt from content_formatter.txt | ✅ Done | Loaded and used for AI |
 | Transforms user input to markdown | ✅ Done | Via Azure OpenAI |
 | Generates PowerPoint from markdown | ✅ Done | Using existing engine |
 | Works with existing main.py | ✅ Done | Both coexist independently |
@@ -251,7 +251,7 @@ All requirements have been met:
 - ✅ Gradio chatbot GUI implemented
 - ✅ User input transformed to markdown via Azure OpenAI
 - ✅ PowerPoint generated from markdown
-- ✅ System prompt from `prompts/formatter.txt` used
+- ✅ System prompt from `prompts/content_formatter.txt` used
 - ✅ Functionality tested and verified
 - ✅ Comprehensive documentation provided
 

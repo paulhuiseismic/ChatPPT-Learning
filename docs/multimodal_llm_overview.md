@@ -15,11 +15,11 @@
 
 以下是多模态模型的典型架构示意图：
 
-![image1](images/multimodal_llm_overview/1.png)
+![image1](../images/multimodal_llm_overview/1.png)
 
 TransFormer 架构图：
 
-![image2](images/multimodal_llm_overview/2.png)
+![image2](../images/multimodal_llm_overview/2.png)
 
 ### 2.1 模态融合技术
 

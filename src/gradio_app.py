@@ -1,6 +1,7 @@
 import os
 import sys
 import datetime
+import uuid
 
 # Add parent directory to path to import from src
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -14,6 +15,8 @@ except ImportError:
 try:
     from langchain_core.messages import HumanMessage, SystemMessage
     from azure_openai import chat_model
+    from chatbot import ChatBot
+    from image_advisor import ImageAdvisor
     LANGCHAIN_AVAILABLE = True
 except ImportError:
     print("WARNING: langchain-core is not installed. AI transformation will not work.")
@@ -33,13 +36,38 @@ from template_manager import load_template, get_layout_mapping
 from config import Config
 from logger import LOG
 
+# Global instances for chatbot and image advisor with session management
+chatbot_instances = {}
+image_advisor_instance = None
+
+
+def get_chatbot_instance(session_id):
+    """Get or create a ChatBot instance for the given session"""
+    if session_id not in chatbot_instances:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_dir = os.path.dirname(script_dir)
+        prompt_path = os.path.join(project_dir, "prompts", "content_formatter.txt")
+        chatbot_instances[session_id] = ChatBot(prompt_file=prompt_path, session_id=session_id)
+    return chatbot_instances[session_id]
+
+
+def get_image_advisor_instance():
+    """Get or create the ImageAdvisor instance"""
+    global image_advisor_instance
+    if image_advisor_instance is None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_dir = os.path.dirname(script_dir)
+        prompt_path = os.path.join(project_dir, "prompts", "image_advisor.txt")
+        image_advisor_instance = ImageAdvisor(prompt_file=prompt_path)
+    return image_advisor_instance
+
 
 def load_system_prompt():
-    """Load the system prompt from prompts/formatter.txt"""
+    """Load the system prompt from prompts/content_formatter.txt"""
     # Get the project root directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(script_dir)
-    prompt_path = os.path.join(project_dir, "prompts", "formatter.txt")
+    prompt_path = os.path.join(project_dir, "prompts", "content_formatter.txt")
 
     if not os.path.exists(prompt_path):
         LOG.error(f"Prompt file {prompt_path} does not exist")
@@ -67,44 +95,80 @@ def transcribe_audio(audio_file, task="transcribe"):
         return f"❌ Error transcribing audio: {str(e)}"
 
 
-def transform_to_markdown(user_input, chat_history):
-    """Transform user input to markdown format using Azure OpenAI"""
+def chat_with_bot(user_input, chat_history, session_id):
+    """Chat with the bot to refine markdown content using ChatBot with history"""
     if not LANGCHAIN_AVAILABLE:
         error_msg = "❌ LangChain is not installed. Please run: pip install langchain-openai langchain-core"
         chat_history.append({"role": "user", "content": user_input})
         chat_history.append({"role": "assistant", "content": error_msg})
-        return error_msg, chat_history
+        return chat_history, ""
 
     try:
-        system_prompt = load_system_prompt()
+        # Get chatbot instance for this session
+        chatbot = get_chatbot_instance(session_id)
 
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_input)
-        ]
+        LOG.info(f"Sending message to chatbot for session {session_id}")
+        response = chatbot.chat_with_history(user_input, session_id)
 
-        LOG.info(f"Sending request to Azure OpenAI for markdown transformation")
-        response = chat_model.invoke(messages)
-        markdown_output = response.content
+        LOG.info(f"Received response from chatbot")
 
-        LOG.info(f"Received markdown output from Azure OpenAI")
-
-        # Update chat history - using proper message format with role and content
+        # Update chat history
         chat_history.append({"role": "user", "content": user_input})
-        chat_history.append({"role": "assistant", "content": markdown_output})
+        chat_history.append({"role": "assistant", "content": response})
 
-        return markdown_output, chat_history
+        return chat_history, response
 
     except Exception as e:
-        LOG.error(f"Error transforming to markdown: {str(e)}")
+        LOG.error(f"Error in chat: {str(e)}")
         error_msg = f"❌ Error: {str(e)}"
         chat_history.append({"role": "user", "content": user_input})
         chat_history.append({"role": "assistant", "content": error_msg})
-        return error_msg, chat_history
+        return chat_history, error_msg
+
+
+def enhance_markdown_with_images(markdown_text, session_id):
+    """Enhance markdown content with images using ImageAdvisor"""
+    if not markdown_text or not markdown_text.strip():
+        return markdown_text, "⚠️ Please create some content first by chatting with the AI."
+
+    try:
+        LOG.info(f"Enhancing markdown with images for session {session_id}")
+
+        # Get image advisor instance
+        advisor = get_image_advisor_instance()
+
+        # Generate images and insert into markdown
+        enhanced_content, image_pair = advisor.generate_images(
+            markdown_text,
+            image_directory=f"session_{session_id}",
+            num_images=3
+        )
+
+        LOG.info(f"Successfully enhanced markdown with {len(image_pair)} images")
+
+        if len(image_pair) > 0:
+            status_msg = f"✅ Successfully added {len(image_pair)} images to your presentation!\n"
+            status_msg += f"📁 Images saved to: images/session_{session_id}/\n"
+            status_msg += "🎨 Markdown has been updated with image references."
+        else:
+            status_msg = "⚠️ No images were added. The slides may not have suitable content for images."
+
+        return enhanced_content, status_msg
+
+    except Exception as e:
+        LOG.error(f"Error enhancing markdown with images: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        error_msg = f"❌ Error adding images: {str(e)}\n"
+        error_msg += "💡 Try again or generate PPT without images."
+        return markdown_text, error_msg
 
 
 def generate_ppt_from_markdown(markdown_text):
     """Generate PowerPoint presentation from markdown text"""
+    if not markdown_text or not markdown_text.strip():
+        return None, "⚠️ Please create some content first by chatting with the AI."
+
     try:
         # Get project root directory
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -145,7 +209,9 @@ def generate_ppt_from_markdown(markdown_text):
             # Return absolute path for Gradio to access the file
             abs_output_path = os.path.abspath(output_pptx)
 
-            return abs_output_path, f"✅ PowerPoint generated successfully!\n\nFile: {output_filename}"
+            success_msg = f"✅ PowerPoint generated successfully!\n\n📁 File: {output_filename}\n💾 Location: output/"
+
+            return abs_output_path, success_msg
         finally:
             # Restore original directory
             os.chdir(original_dir)
@@ -157,26 +223,37 @@ def generate_ppt_from_markdown(markdown_text):
         return None, f"❌ Error generating PowerPoint: {str(e)}"
 
 
-def process_user_input(user_input, chat_history):
-    """Process user input: transform to markdown and generate PPT"""
+def process_chat_message(user_input, chat_history, session_id, current_markdown):
+    """Process a chat message to refine the markdown content"""
     if not user_input or not user_input.strip():
-        return chat_history, "", None, "Please enter some text first."
+        return chat_history, current_markdown
 
-    # Step 1: Transform to markdown
-    markdown_output, updated_history = transform_to_markdown(user_input, chat_history)
+    # Chat with bot to refine content
+    updated_history, response = chat_with_bot(user_input, chat_history, session_id)
 
-    # Step 2: Generate PowerPoint if markdown was generated successfully
-    if not markdown_output.startswith("Error:"):
-        ppt_file, status_message = generate_ppt_from_markdown(markdown_output)
-        return updated_history, markdown_output, ppt_file, status_message
-    else:
-        return updated_history, markdown_output, None, "Failed to generate markdown. Please try again."
+    # Update markdown output with the latest response
+    return updated_history, response
+
+
+def process_enhance_images(markdown_text, session_id):
+    """Enhance markdown with AI-selected images"""
+    enhanced_markdown, status = enhance_markdown_with_images(markdown_text, session_id)
+    return enhanced_markdown, status
+
+
+def process_generate_ppt(current_markdown):
+    """Generate PowerPoint from the current markdown content"""
+    ppt_file, status_message = generate_ppt_from_markdown(current_markdown)
+    return ppt_file, status_message
 
 
 def create_gradio_interface():
     """Create the Gradio chatbot interface"""
 
     with gr.Blocks(title="ChatPPT - AI PowerPoint Generator") as demo:
+        # Session state for maintaining user session
+        session_id = gr.State(lambda: str(uuid.uuid4()))
+
         gr.Markdown(
             """
             # 🎨 ChatPPT - AI PowerPoint Generator
@@ -184,9 +261,9 @@ def create_gradio_interface():
             Transform your ideas into professional PowerPoint presentations using AI!
             
             **How it works:**
-            1. Enter your content or ideas in natural language
-            2. AI transforms it into structured markdown format
-            3. PowerPoint is automatically generated from the markdown
+            1. **Chat** with the AI to create and refine your presentation content
+            2. **Review** the generated markdown in real-time
+            3. **Generate** PowerPoint with optional AI-selected images
             """
         )
 
@@ -220,37 +297,62 @@ def create_gradio_interface():
                 # Text input section
                 gr.Markdown("#### ✍️ Text Input")
                 user_input = gr.Textbox(
-                    label="Enter your content",
-                    placeholder="Describe your presentation content here...\n\nExample:\n我想做一个关于人工智能的演讲\n包括AI的定义\nAI的应用领域\nAI的未来发展",
-                    lines=10
+                    label="Enter your message",
+                    placeholder="Chat with the AI to create your presentation...\n\nExample:\n- 我想做一个关于人工智能的演讲\n- 请添加AI的应用领域章节\n- 修改第二章的标题",
+                    lines=8
                 )
 
                 with gr.Row():
-                    submit_btn = gr.Button("🚀 Generate PowerPoint", variant="primary", size="lg")
-                    clear_btn = gr.Button("🗑️ Clear", variant="secondary")
+                    send_btn = gr.Button("💬 Send Message", variant="primary")
+                    clear_btn = gr.Button("🗑️ Clear All", variant="secondary")
 
             with gr.Column(scale=1):
                 gr.Markdown("### 💬 Chat History")
                 chatbot = gr.Chatbot(
-                    label="Conversation",
+                    label="Conversation with AI",
                     height=400
                 )
 
         with gr.Row():
             with gr.Column():
-                gr.Markdown("### 📄 Generated Markdown")
+                gr.Markdown("### 📄 Current Markdown Content")
                 markdown_output = gr.Textbox(
-                    label="Markdown Format",
+                    label="This is your presentation content that will be converted to PPT",
                     lines=12,
-                    interactive=False
+                    interactive=True,
+                    placeholder="Your markdown content will appear here as you chat..."
+                )
+
+                # Image enhancement and PowerPoint generation
+                gr.Markdown("### 🎨 Enhance & Generate")
+                with gr.Row():
+                    enhance_images_btn = gr.Button(
+                        "🖼️ Enhance with AI Images",
+                        variant="secondary",
+                        size="lg",
+                        scale=1
+                    )
+                    generate_ppt_btn = gr.Button(
+                        "📊 Generate PowerPoint",
+                        variant="primary",
+                        size="lg",
+                        scale=1
+                    )
+
+                gr.Markdown(
+                    """
+                    💡 **Workflow**: 
+                    1. Chat to create content → 2. (Optional) Enhance with images → 3. Generate PPT
+                    """
                 )
 
             with gr.Column():
-                gr.Markdown("### 📊 PowerPoint Output")
+                gr.Markdown("### 📊 Status & Output")
                 status_output = gr.Textbox(
-                    label="Status",
-                    lines=3,
-                    interactive=False
+                    label="Status Messages",
+                    lines=6,
+                    interactive=False,
+                    placeholder="Status messages will appear here..."
                 )
                 ppt_output = gr.File(
                     label="Download PowerPoint",
@@ -259,7 +361,9 @@ def create_gradio_interface():
 
         # Event handlers
         def clear_all():
-            return [], "", "", None, "", None
+            """Clear all fields and create new session"""
+            new_session_id = str(uuid.uuid4())
+            return [], "", "", None, "", None, new_session_id
 
         def handle_audio_transcription(audio_file, task, current_text):
             """Transcribe audio and append to current text"""
@@ -282,28 +386,65 @@ def create_gradio_interface():
                 outputs=[user_input]
             )
 
+        # Chat message handler
+        send_btn.click(
+            fn=process_chat_message,
+            inputs=[user_input, chatbot, session_id, markdown_output],
+            outputs=[chatbot, markdown_output]
+        ).then(
+            fn=lambda: "",  # Clear input after sending
+            outputs=[user_input]
+        )
+
+        # Also allow Enter key to send
+        user_input.submit(
+            fn=process_chat_message,
+            inputs=[user_input, chatbot, session_id, markdown_output],
+            outputs=[chatbot, markdown_output]
+        ).then(
+            fn=lambda: "",
+            outputs=[user_input]
+        )
+
+        # Image enhancement handler
+        enhance_images_btn.click(
+            fn=process_enhance_images,
+            inputs=[markdown_output, session_id],
+            outputs=[markdown_output, status_output]
+        )
+
         # PowerPoint generation handler
-        submit_btn.click(
-            fn=process_user_input,
-            inputs=[user_input, chatbot],
-            outputs=[chatbot, markdown_output, ppt_output, status_output]
+        generate_ppt_btn.click(
+            fn=process_generate_ppt,
+            inputs=[markdown_output],
+            outputs=[ppt_output, status_output]
         )
 
         # Clear all handler
         clear_btn.click(
             fn=clear_all,
-            outputs=[chatbot, user_input, markdown_output, ppt_output, status_output, audio_input]
+            outputs=[chatbot, user_input, markdown_output, ppt_output, status_output, audio_input, session_id]
         )
 
         gr.Markdown(
             """
             ---
             ### 📌 Tips:
-            - 🎤 **Audio Input**: Upload an audio file or record using your microphone, then click "Transcribe Audio" to convert it to text
-            - ✍️ **Text Input**: You can write in natural language (Chinese or English)
-            - 🤖 **AI Processing**: The AI will structure your content into slides
-            - 📁 **Output**: Each generated PowerPoint will have a unique timestamp
-            - 💾 **Storage**: Check the `output/` folder for all generated presentations
+            - 💬 **Chat Mode**: Have a conversation with AI to iteratively build your presentation
+            - 🎤 **Audio Input**: Upload an audio file or record using your microphone for transcription
+            - ✍️ **Text Input**: Write in natural language (Chinese or English) to describe your content
+            - 🔄 **Iterate**: Keep chatting to refine, add, or modify slides until satisfied
+            - ✏️ **Edit Markdown**: You can manually edit the markdown content before generating PPT
+            - 🖼️ **Add Images**: Click "Enhance with AI Images" to search and insert relevant images
+            - 📊 **Generate**: Click "Generate PowerPoint" when your content is ready
+            - 💾 **Storage**: Check the `output/` folder for PPT files and `images/` for downloaded images
+            
+            ### 🎯 Example Workflow:
+            1. **Chat**: "我想做一个关于人工智能的演讲" → AI creates initial structure
+            2. **Refine**: "请添加AI在医疗领域的应用" → AI adds a new section
+            3. **Review**: Check the markdown content, edit if needed
+            4. **Enhance**: Click "🖼️ Enhance with AI Images" → AI finds and adds images to markdown
+            5. **Generate**: Click "📊 Generate PowerPoint" → Get your final vivid PPT!
             """
         )
 
