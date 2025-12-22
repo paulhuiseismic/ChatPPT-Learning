@@ -16,6 +16,7 @@ try:
     from langchain_core.messages import HumanMessage, SystemMessage
     from azure_openai import chat_model
     from chatbot import ChatBot
+    from reflection_chatbot import ReflectionChatBot
     from image_advisor import ImageAdvisor
     LANGCHAIN_AVAILABLE = True
 except ImportError:
@@ -42,12 +43,12 @@ image_advisor_instance = None
 
 
 def get_chatbot_instance(session_id):
-    """Get or create a ChatBot instance for the given session"""
+    """Get or create a ReflectionChatBot instance for the given session"""
     if session_id not in chatbot_instances:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_dir = os.path.dirname(script_dir)
-        prompt_path = os.path.join(project_dir, "prompts", "content_formatter.txt")
-        chatbot_instances[session_id] = ChatBot(prompt_file=prompt_path, session_id=session_id)
+        prompt_path = os.path.join(project_dir, "prompts", "content_assistant.txt")
+        chatbot_instances[session_id] = ReflectionChatBot(prompt_file=prompt_path, session_id=session_id)
     return chatbot_instances[session_id]
 
 
@@ -63,11 +64,11 @@ def get_image_advisor_instance():
 
 
 def load_system_prompt():
-    """Load the system prompt from prompts/content_formatter.txt"""
+    """Load the system prompt from prompts/content_assistant.txt"""
     # Get the project root directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(script_dir)
-    prompt_path = os.path.join(project_dir, "prompts", "content_formatter.txt")
+    prompt_path = os.path.join(project_dir, "prompts", "content_assistant.txt")
 
     if not os.path.exists(prompt_path):
         LOG.error(f"Prompt file {prompt_path} does not exist")
@@ -96,34 +97,45 @@ def transcribe_audio(audio_file, task="transcribe"):
 
 
 def chat_with_bot(user_input, chat_history, session_id):
-    """Chat with the bot to refine markdown content using ChatBot with history"""
+    """Chat with the bot to refine markdown content using ReflectionChatBot with reflection mechanism"""
     if not LANGCHAIN_AVAILABLE:
-        error_msg = "❌ LangChain is not installed. Please run: pip install langchain-openai langchain-core"
+        error_msg = "❌ LangChain is not installed. Please run: pip install langchain-openai langchain-core langgraph"
         chat_history.append({"role": "user", "content": user_input})
         chat_history.append({"role": "assistant", "content": error_msg})
-        return chat_history, ""
+        return chat_history, "", ""
 
     try:
         # Get chatbot instance for this session
         chatbot = get_chatbot_instance(session_id)
 
-        LOG.info(f"Sending message to chatbot for session {session_id}")
-        response = chatbot.chat_with_history(user_input, session_id)
+        LOG.info(f"Sending message to reflection chatbot for session {session_id}")
 
-        LOG.info(f"Received response from chatbot")
+        # Use reflection mechanism to generate high-quality content
+        response, feedbacks = chatbot.chat_with_reflection(user_input, session_id)
+
+        LOG.info(f"Received response from reflection chatbot with {len(feedbacks)} feedback rounds")
+
+        # Format feedback for display
+        feedback_display = ""
+        if feedbacks:
+            feedback_display = "### 🔄 Reflection Feedback:\n\n"
+            for i, feedback in enumerate(feedbacks, 1):
+                feedback_display += f"**Round {i} Feedback:**\n{feedback}\n\n"
 
         # Update chat history
         chat_history.append({"role": "user", "content": user_input})
         chat_history.append({"role": "assistant", "content": response})
 
-        return chat_history, response
+        return chat_history, response, feedback_display
 
     except Exception as e:
         LOG.error(f"Error in chat: {str(e)}")
+        import traceback
+        traceback.print_exc()
         error_msg = f"❌ Error: {str(e)}"
         chat_history.append({"role": "user", "content": user_input})
         chat_history.append({"role": "assistant", "content": error_msg})
-        return chat_history, error_msg
+        return chat_history, error_msg, ""
 
 
 def enhance_markdown_with_images(markdown_text, session_id):
@@ -224,15 +236,15 @@ def generate_ppt_from_markdown(markdown_text):
 
 
 def process_chat_message(user_input, chat_history, session_id, current_markdown):
-    """Process a chat message to refine the markdown content"""
+    """Process a chat message to refine the markdown content with reflection"""
     if not user_input or not user_input.strip():
-        return chat_history, current_markdown
+        return chat_history, current_markdown, ""
 
-    # Chat with bot to refine content
-    updated_history, response = chat_with_bot(user_input, chat_history, session_id)
+    # Chat with bot to refine content using reflection
+    updated_history, response, feedback = chat_with_bot(user_input, chat_history, session_id)
 
     # Update markdown output with the latest response
-    return updated_history, response
+    return updated_history, response, feedback
 
 
 def process_enhance_images(markdown_text, session_id):
@@ -348,6 +360,14 @@ def create_gradio_interface():
 
             with gr.Column():
                 gr.Markdown("### 📊 Status & Output")
+
+                # Reflection feedback display
+                gr.Markdown("#### 🔄 AI Reflection Feedback")
+                feedback_output = gr.Markdown(
+                    value="",
+                    label="Reflection Process"
+                )
+
                 status_output = gr.Textbox(
                     label="Status Messages",
                     lines=6,
@@ -363,7 +383,7 @@ def create_gradio_interface():
         def clear_all():
             """Clear all fields and create new session"""
             new_session_id = str(uuid.uuid4())
-            return [], "", "", None, "", None, new_session_id
+            return [], "", "", None, "", "", None, new_session_id
 
         def handle_audio_transcription(audio_file, task, current_text):
             """Transcribe audio and append to current text"""
@@ -390,7 +410,7 @@ def create_gradio_interface():
         send_btn.click(
             fn=process_chat_message,
             inputs=[user_input, chatbot, session_id, markdown_output],
-            outputs=[chatbot, markdown_output]
+            outputs=[chatbot, markdown_output, feedback_output]
         ).then(
             fn=lambda: "",  # Clear input after sending
             outputs=[user_input]
@@ -400,7 +420,7 @@ def create_gradio_interface():
         user_input.submit(
             fn=process_chat_message,
             inputs=[user_input, chatbot, session_id, markdown_output],
-            outputs=[chatbot, markdown_output]
+            outputs=[chatbot, markdown_output, feedback_output]
         ).then(
             fn=lambda: "",
             outputs=[user_input]
@@ -423,7 +443,7 @@ def create_gradio_interface():
         # Clear all handler
         clear_btn.click(
             fn=clear_all,
-            outputs=[chatbot, user_input, markdown_output, ppt_output, status_output, audio_input, session_id]
+            outputs=[chatbot, user_input, markdown_output, ppt_output, status_output, feedback_output, audio_input, session_id]
         )
 
         gr.Markdown(
@@ -431,6 +451,8 @@ def create_gradio_interface():
             ---
             ### 📌 Tips:
             - 💬 **Chat Mode**: Have a conversation with AI to iteratively build your presentation
+            - 🔄 **Reflection Mechanism**: AI automatically reflects on its output up to 3 times to improve quality
+            - 📊 **Feedback Display**: View the AI's self-critique and improvement process in real-time
             - 🎤 **Audio Input**: Upload an audio file or record using your microphone for transcription
             - ✍️ **Text Input**: Write in natural language (Chinese or English) to describe your content
             - 🔄 **Iterate**: Keep chatting to refine, add, or modify slides until satisfied
@@ -440,11 +462,12 @@ def create_gradio_interface():
             - 💾 **Storage**: Check the `output/` folder for PPT files and `images/` for downloaded images
             
             ### 🎯 Example Workflow:
-            1. **Chat**: "我想做一个关于人工智能的演讲" → AI creates initial structure
-            2. **Refine**: "请添加AI在医疗领域的应用" → AI adds a new section
-            3. **Review**: Check the markdown content, edit if needed
-            4. **Enhance**: Click "🖼️ Enhance with AI Images" → AI finds and adds images to markdown
-            5. **Generate**: Click "📊 Generate PowerPoint" → Get your final vivid PPT!
+            1. **Chat**: "我想做一个关于人工智能的演讲" → AI creates initial structure with reflection
+            2. **Observe**: Check the reflection feedback to see how AI improved the content
+            3. **Refine**: "请添加AI在医疗领域的应用" → AI adds a new section with reflection
+            4. **Review**: Check the markdown content, edit if needed
+            5. **Enhance**: Click "🖼️ Enhance with AI Images" → AI finds and adds images to markdown
+            6. **Generate**: Click "📊 Generate PowerPoint" → Get your final vivid PPT!
             """
         )
 
