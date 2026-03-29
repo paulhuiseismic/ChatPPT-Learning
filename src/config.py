@@ -17,7 +17,7 @@ class Config:
         if not os.path.exists(self.config_file):
             raise FileNotFoundError(f"Config file '{self.config_file}' not found.")
         
-        with open(self.config_file, 'r') as f:
+        with open(self.config_file, 'r', encoding='utf-8') as f:
             config = json.load(f)
             
             self.input_mode = config.get('input_mode', 'text')

@@ -117,9 +117,14 @@ class ReflectionChatBot:
         cls_map = {"ai": HumanMessage, "human": AIMessage}
 
         # First message is the original user request, rest are conversation history
-        transformed = [state['messages'][0]] + [
-            cls_map[msg.type](content=msg.content)
-            for msg in state['messages'][1:]
+        messages = state.get('messages', [])
+        if not messages:
+            LOG.error("No messages in state for reflection node")
+            raise ValueError("Reflection node requires at least one message in state")
+
+        transformed = [messages[0]] + [
+            cls_map.get(msg.type, HumanMessage)(content=msg.content)
+            for msg in messages[1:]
         ]
 
         # Get reflection/critique

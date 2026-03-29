@@ -1,3 +1,4 @@
+import json
 import re
 import requests
 import os
@@ -203,10 +204,11 @@ class ImageAdvisor(ABC):
             m_data = img.get("m")
             if m_data:
                 try:
-                    m_json = eval(m_data)
+                    m_json = json.loads(m_data)
                     if "murl" in m_json:
                         image_links.append(m_json["murl"])
-                except:
+                except (json.JSONDecodeError, KeyError, TypeError) as e:
+                    LOG.debug(f"Failed to parse image metadata: {e}")
                     continue
             # 获取更多链接以备用（因为有些可能下载失败）
             if len(image_links) >= max_attempts:

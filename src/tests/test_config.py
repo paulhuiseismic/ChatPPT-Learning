@@ -87,6 +87,25 @@ class TestConfig(unittest.TestCase):
             os.unlink(temp_config_path)
 
 
+    def test_config_unicode_values(self):
+        """Test loading config file with non-ASCII (Unicode) values"""
+        config_data = {
+            'input_mode': 'text',
+            'ppt_template': 'templates/模板.pptx',
+            'chatbot_prompt': '提示词/chatbot.txt',
+        }
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', encoding='utf-8', delete=False) as f:
+            json.dump(config_data, f, ensure_ascii=False)
+            temp_config_path = f.name
+
+        try:
+            config = Config(config_file=temp_config_path)
+            self.assertEqual(config.ppt_template, 'templates/模板.pptx')
+            self.assertEqual(config.chatbot_prompt, '提示词/chatbot.txt')
+        finally:
+            os.unlink(temp_config_path)
+
+
 if __name__ == '__main__':
     unittest.main()
-
